@@ -70,5 +70,77 @@
     "hours": 0,
     "minutes": 5,
     "seconds": 0
+  },
+  "LD1Q9X7M": {
+    "mediaPath": "C:\\\\confi\\\\flight-data\\\\trail_01_a.txt",
+    "hours": 0,
+    "minutes": 5,
+    "seconds": 0
+  },
+  "LA1N8V2K": {
+    "mediaPath": "C:\\\\confi\\\\flight-data\\\\trail_01_b.txt",
+    "hours": 0,
+    "minutes": 5,
+    "seconds": 0
+  },
+  "LD2T6R5P": {
+    "mediaPath": "C:\\\\confi\\\\flight-data\\\\trail_02_a.txt",
+    "hours": 0,
+    "minutes": 5,
+    "seconds": 0
+  },
+  "LA2M4C8Q": {
+    "mediaPath": "C:\\\\confi\\\\flight-data\\\\trail_02_b.txt",
+    "hours": 0,
+    "minutes": 5,
+    "seconds": 0
+  },
+  "LD3W7B2N": {
+    "mediaPath": "C:\\\\confi\\\\flight-data\\\\trail_03_a.txt",
+    "hours": 0,
+    "minutes": 5,
+    "seconds": 0
+  },
+  "LA3P9K5H": {
+    "mediaPath": "C:\\\\confi\\\\flight-data\\\\trail_03_b.txt",
+    "hours": 0,
+    "minutes": 5,
+    "seconds": 0
+  },
+  "LD4Y2D8S": {
+    "mediaPath": "C:\\\\confi\\\\flight-data\\\\trail_04_a.txt",
+    "hours": 0,
+    "minutes": 5,
+    "seconds": 0
+  },
+  "LA4H3L7T": {
+    "mediaPath": "C:\\\\confi\\\\flight-data\\\\trail_04_b.txt",
+    "hours": 0,
+    "minutes": 5,
+    "seconds": 0
+  },
+  "LD5K8J1R": {
+    "mediaPath": "C:\\\\confi\\\\flight-data\\\\trail_05_a.txt",
+    "hours": 0,
+    "minutes": 5,
+    "seconds": 0
+  },
+  "LA5Q2Z6X": {
+    "mediaPath": "C:\\\\confi\\\\flight-data\\\\trail_05_b.txt",
+    "hours": 0,
+    "minutes": 5,
+    "seconds": 0
+  },
+  "LD6C7F9V": {
+    "mediaPath": "C:\\\\confi\\\\flight-data\\\\trail_06_a.txt",
+    "hours": 0,
+    "minutes": 5,
+    "seconds": 0
+  },
+  "LA6T4M1B": {
+    "mediaPath": "C:\\\\confi\\\\flight-data\\\\trail_06_b.txt",
+    "hours": 0,
+    "minutes": 5,
+    "seconds": 0
   }
 }
