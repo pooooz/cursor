@@ -12,8 +12,16 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 FONT = os.path.join(HERE, "fonts", "CormorantSC-Bold.ttf")
 FEATURES = ["lnum", "kern"]
 
-NOM_COMMAND = "Лучшая команда по мнению командования сторон"
-NOM_TEAMS = "Лучшая команда по мнению других команд"
+NOMS = {
+    "command": "Лучшая команда по мнению командования сторон",
+    "teams": "Лучшая команда по мнению других команд",
+    "tech": "Лучшая техника на игре",
+    "attendance": "Лучшая команда по посещаемости игр",
+    "quality": "Лучшее качество игры по оценке командиров сторон",
+    "impression": "Общее впечатление от игры по версии участников",
+    "base": "Материальная база на игре",
+    "leader": "Лучший командующий стороной",
+}
 
 # Plate geometry measured on the 4x templates: (left, right, top, bottom),
 # coordinates of the centres of the bright neon border lines.
@@ -26,16 +34,37 @@ TEMPLATES = {
             name=(212, 2683, 2777, 3089), nom=(227, 2666, 3336, 3616)),
 }
 
+# (nomination, place, main line, optional second line)
 DIPLOMAS = [
-    (1, "1 MEF", NOM_COMMAND),
-    (1, "Партизаны", NOM_COMMAND),
-    (1, "СК 307ОМБ", NOM_COMMAND),
-    (1, "Rangers", NOM_COMMAND),
-    (1, "Snow Pandas", NOM_COMMAND),
-    (1, "Rangers", NOM_TEAMS),
-    (2, "Snow Pandas", NOM_TEAMS),
-    (3, "Minotaur", NOM_TEAMS),
+    ("command", 1, "1 MEF", None),
+    ("command", 1, "Партизаны", None),
+    ("command", 1, "СК 307ОМБ", None),
+    ("command", 1, "Rangers", None),
+    ("command", 1, "Snow Pandas", None),
+    ("teams", 1, "Rangers", None),
+    ("teams", 2, "Snow Pandas", None),
+    ("teams", 3, "Minotaur", None),
+    ("tech", 1, "Дикарь", "ВСС Ведьмак"),
+    ("tech", 2, "Бэдмобиль", "Bad's Company"),
+    ("tech", 3, "Ниссан Патрол", "BLACK STORK"),
+    ("attendance", 1, "Minotaur", None),
+    ("attendance", 2, "Snow Pandas", None),
+    ("attendance", 3, "СК 307ОМБ", None),
+    ("attendance", 3, "Rangers", None),
+    ("attendance", 3, "S.R.S. Jaegers", None),
+    ("quality", 1, "РИСС", None),
+    ("quality", 2, "Snow Pandas", None),
+    ("quality", 3, "Rangers", None),
+    ("impression", 1, "BADDAY Vietnam", "31.07–01.08.2026"),
+    ("impression", 2, "Кровавый Алмаз 5", "16–17.05.2026"),
+    ("impression", 3, "CONTROL", "15–16.08.2026"),
+    ("base", 1, "BADDAY Vietnam", "31.07–01.08.2026"),
+    ("base", 2, "Войны синдикатов 3", "Волчье логово (Брест) · 03–04.10.2026"),
+    ("base", 3, "CONTROL", "15–16.08.2026"),
+    ("leader", 1, "Лоич", None),
+    ("leader", 2, "Bad", None),
 ]
+
 
 def glen(font, s):
     return font.getlength(s, features=FEATURES)
@@ -54,30 +83,28 @@ def layout(font, text, tracking):
     return xs, xs[-1] + glen(font, text[-1])
 
 
-def fit(text, plate, max_cap_share, max_size, tracking_em, safe_width):
-    left, right, top, bottom = plate
-    max_w = (right - left) * safe_width
-    max_cap = (bottom - top) * max_cap_share
+def measure(text, size, tracking_em):
+    font = ImageFont.truetype(FONT, size, layout_engine=ImageFont.Layout.RAQM)
+    box = font.getbbox("H")
+    xs, w = layout(font, text, tracking_em * size)
+    return font, xs, w, box[3] - box[1]
+
+
+def fit(text, max_w, max_cap, max_size, tracking_em):
     for size in range(max_size, 20, -2):
-        font = ImageFont.truetype(FONT, size, layout_engine=ImageFont.Layout.RAQM)
-        cap = -font.getbbox("H")[1] + font.getbbox("H")[3]
-        xs, w = layout(font, text, tracking_em * size)
+        font, xs, w, cap = measure(text, size, tracking_em)
         if w <= max_w and cap <= max_cap:
             return font, xs, cap, size
     raise ValueError(text)
 
 
-def draw_text(img, plate, text, glow, max_cap_share, max_size, tracking_em, safe_width, lift=0.02):
-    left, right, top, bottom = plate
-    font, xs, cap, size = fit(text, plate, max_cap_share, max_size, tracking_em, safe_width)
+def render_line(img, text, font, xs, cap, cx, baseline, glow):
     layer = Image.new("L", img.size, 0)
     d = ImageDraw.Draw(layer)
     for ch, x in zip(text, xs):
         d.text((x + 100, 1000), ch, font=font, fill=255, anchor="ls", features=FEATURES)
     ink = layer.getbbox()
-    cx, cy = (left + right) / 2, (top + bottom) / 2 - (bottom - top) * lift
     dx = cx - ((ink[0] + ink[2]) / 2 - 100)
-    baseline = cy + cap / 2
 
     mask = Image.new("L", img.size, 0)
     md = ImageDraw.Draw(mask)
@@ -99,26 +126,44 @@ def draw_text(img, plate, text, glow, max_cap_share, max_size, tracking_em, safe
     y0, y1 = int(baseline - cap * 1.05), int(baseline + cap * 0.25)
     for y in range(max(y0, 0), min(y1, img.size[1])):
         t = (y - y0) / (y1 - y0)
-        v = 255 - 95 * abs(t - 0.38) * 1.5
-        v = max(150, min(255, v))
+        v = max(150, min(255, 255 - 95 * abs(t - 0.38) * 1.5))
         gd.line([(0, y), (img.size[0], y)], fill=(int(v), int(v), int(min(255, v + 8))))
     img.paste(grad, (0, 0), mask)
 
 
+def draw_block(img, plate, main, sub, glow, cap_share, max_size, tracking_em, safe_width, lift=0.02):
+    """Centre one or two lines as a block on the plate (main line bigger, sub line below)."""
+    left, right, top, bottom = plate
+    h, max_w = bottom - top, (right - left) * safe_width
+    cx, cy = (left + right) / 2, (top + bottom) / 2 - h * lift
+
+    if sub is None:
+        font, xs, cap, _ = fit(main, max_w, h * cap_share, max_size, tracking_em)
+        render_line(img, main, font, xs, cap, cx, cy + cap / 2, glow)
+        return
+
+    mfont, mxs, mcap, msize = fit(main, max_w, h * cap_share * 0.78, int(max_size * 0.8), tracking_em)
+    sfont, sxs, scap, _ = fit(sub, max_w, h * 0.2, int(msize * 0.7), tracking_em * 1.5)
+    gap = mcap * 0.55
+    total = mcap + gap + scap
+    mbase = cy - total / 2 + mcap
+    render_line(img, main, mfont, mxs, mcap, cx, mbase, glow)
+    render_line(img, sub, sfont, sxs, scap, cx, mbase + gap + scap, glow)
+
+
 def slug(s):
-    return s.replace(" ", "_").replace("'", "")
+    return "".join(c if c.isalnum() else "_" for c in s).strip("_")[:40]
 
 
 def main():
     out_dir = os.path.join(HERE, "output")
     os.makedirs(out_dir, exist_ok=True)
-    for place, team, nom in DIPLOMAS:
+    for nom, place, main_text, sub in DIPLOMAS:
         t = TEMPLATES[place]
         img = Image.open(os.path.join(HERE, "templates_hires", t["file"])).convert("RGBA")
-        draw_text(img, t["name"], team, t["glow"], 0.46, 260, 0.05, 0.78)
-        draw_text(img, t["nom"], nom, t["glow"], 0.30, 160, 0.03, 0.88)
-        kind = "command" if nom == NOM_COMMAND else "teams"
-        out = os.path.join(out_dir, f"diploma_{kind}_place{place}_{slug(team)}.jpg")
+        draw_block(img, t["name"], main_text, sub, t["glow"], 0.46, 260, 0.05, 0.78)
+        draw_block(img, t["nom"], NOMS[nom], None, t["glow"], 0.30, 160, 0.03, 0.88)
+        out = os.path.join(out_dir, f"diploma_{nom}_place{place}_{slug(main_text)}.jpg")
         img.convert("RGB").save(out, quality=95, subsampling=0)
         print(out)
 
